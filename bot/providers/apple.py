@@ -4,8 +4,6 @@ import asyncio
 import logging
 import shutil
 from bot.helpers.utils import (
-    run_apple_downloader,
-    extract_apple_metadata,
     send_message,
     edit_message,
     format_string,
@@ -15,6 +13,10 @@ from bot.helpers.uploader import track_upload, album_upload, music_video_upload,
 from bot.helpers.database.pg_impl import download_history
 from config import Config
 from bot.logger import LOGGER
+
+# Import from new organized modules
+from .apple_utils import run_apple_downloader
+from .apple_metadata import extract_apple_metadata
 
 logger = logging.getLogger(__name__)
 
