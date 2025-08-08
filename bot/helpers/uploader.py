@@ -3,11 +3,14 @@ import shutil
 import zipfile
 import asyncio
 from config import Config
-from bot.helpers.utils import create_apple_zip, format_string, send_message, edit_message
+from bot.helpers.utils import format_string, send_message, edit_message
 from bot.logger import LOGGER
 from mutagen import File
 from mutagen.mp4 import MP4
 import re
+
+# Import from new organized module
+from bot.providers.apple_utils import create_apple_zip
 
 async def track_upload(metadata, user):
     """
