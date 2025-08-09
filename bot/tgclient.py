@@ -1,13 +1,6 @@
-from config import Config
 from pyrogram import Client
-from .logger import LOGGER
-from .settings import bot_set
-import subprocess
-import os
-
-plugins = dict(
-    root="bot/modules"
-)
+from config import Config
+from bot import plugins  # Import plugins from bot package
 
 class Bot(Client):
     def __init__(self):
@@ -16,28 +9,10 @@ class Bot(Client):
             api_id=Config.APP_ID,
             api_hash=Config.API_HASH,
             bot_token=Config.TG_BOT_TOKEN,
-            plugins=plugins,
+            plugins=plugins,  # Use the imported plugins
             workdir=Config.WORK_DIR,
             workers=Config.MAX_WORKERS
         )
 
-    async def start(self):
-        await super().start()
-        await bot_set.login_qobuz()
-        await bot_set.login_deezer()
-        await bot_set.login_tidal()
-        
-        # Initialize Apple Music downloader
-        if not os.path.exists(Config.DOWNLOADER_PATH):
-            LOGGER.error("Apple Music downloader not found! Running installer...")
-            subprocess.run([Config.INSTALLER_PATH], check=True)
-        
-        LOGGER.info("BOT : Started Successfully with Apple Music support")
-
-    async def stop(self, *args):
-        await super().stop()
-        for client in bot_set.clients:
-            await client.session.close()
-        LOGGER.info('BOT : Exited Successfully!')
-
+# Create client instance
 aio = Bot()
