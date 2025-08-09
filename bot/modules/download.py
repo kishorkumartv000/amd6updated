@@ -1,17 +1,18 @@
 from pyrogram.types import Message
 from pyrogram import Client, filters
 
-from bot import CMD
-from bot.logger import LOGGER
+# Import CMD from bot package
+from bot import cmd as CMD
 
+from bot.logger import LOGGER
 import bot.helpers.translations as lang
 
+# Fixed imports using relative paths
 from ..helpers.utils import cleanup
 from ..helpers.qobuz.handler import start_qobuz
 from ..helpers.tidal.handler import start_tidal
 from ..helpers.deezer.handler import start_deezer
 from ..providers.apple import start_apple
-# IMPORT EDIT_MESSAGE HERE:
 from ..helpers.message import send_message, antiSpam, check_user, fetch_user_details, edit_message
 
 
@@ -58,24 +59,17 @@ async def download_track(c, msg: Message):
 
 
 def parse_options(parts: list) -> dict:
-    """Parse command-line options from message parts
-    
-    Args:
-        parts: List of command arguments
-    
-    Returns:
-        dict: Parsed options in {key: value} format
-    """
+    """Parse command-line options from message parts"""
     options = {}
     i = 0
     while i < len(parts):
         part = parts[i]
         if part.startswith('--'):
             key = part[2:]
-            # Check if next part is a value (not another option)
+            # Check if next part is a value
             if i + 1 < len(parts) and not parts[i+1].startswith('--'):
                 options[key] = parts[i+1]
-                i += 1  # Skip value
+                i += 1
             else:
                 options[key] = True
         i += 1
@@ -85,11 +79,6 @@ def parse_options(parts: list) -> dict:
 async def start_link(link: str, user: dict, options: dict = None):
     """
     Route download request to appropriate provider handler
-    
-    Args:
-        link: URL to download
-        user: User details dictionary
-        options: Command-line options passed by user
     """
     tidal = ["https://tidal.com", "https://listen.tidal.com", "tidal.com", "listen.tidal.com"]
     deezer = ["https://link.deezer.com", "https://deezer.com", "deezer.com", "https://www.deezer.com", "link.deezer.com"]
@@ -108,7 +97,6 @@ async def start_link(link: str, user: dict, options: dict = None):
         return 'spotify'
     elif link.startswith(tuple(apple_music)):
         user['provider'] = 'Apple'
-        # USE IMPORTED EDIT_MESSAGE FUNCTION
         await edit_message(user['bot_msg'], "Starting Apple Music download...")
         await start_apple(link, user, options)
     else:
