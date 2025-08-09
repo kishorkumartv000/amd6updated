@@ -64,7 +64,7 @@ async def track_upload(metadata, user):
             metadata['filepath'],
             'audio',
             caption=await format_string(
-                "?? **{title}**\n?? {artist}\n?? {provider}",
+                "🎵 **{title}**\n👤 {artist}\n🎧 {provider}",
                 {
                     'title': metadata['title'],
                     'artist': metadata['artist'],
@@ -81,7 +81,7 @@ async def track_upload(metadata, user):
     elif Config.UPLOAD_MODE == 'Rclone':
         rclone_link, index_link = await rclone_upload(user, metadata['filepath'], base_path)
         text = await format_string(
-            "?? **{title}**\n?? {artist}\n?? {provider}\n?? [Direct Link]({r_link})",
+            "🎵 **{title}**\n👤 {artist}\n🎧 {provider}\n🔗 [Direct Link]({r_link})",
             {
                 'title': metadata['title'],
                 'artist': metadata['artist'],
@@ -90,7 +90,7 @@ async def track_upload(metadata, user):
             }
         )
         if index_link:
-            text += f"\n?? [Index Link]({index_link})"
+            text += f"\n📁 [Index Link]({index_link})"
         await send_message(user, text)
     
     # Cleanup
@@ -118,7 +118,7 @@ async def music_video_upload(metadata, user):
             metadata['filepath'],
             'video',
             caption=await format_string(
-                "?? **{title}**\n?? {artist}\n?? {provider} Music Video",
+                "🎬 **{title}**\n👤 {artist}\n🎧 {provider} Music Video",
                 {
                     'title': metadata['title'],
                     'artist': metadata['artist'],
@@ -130,7 +130,7 @@ async def music_video_upload(metadata, user):
     elif Config.UPLOAD_MODE == 'Rclone':
         rclone_link, index_link = await rclone_upload(user, metadata['filepath'], base_path)
         text = await format_string(
-            "?? **{title}**\n?? {artist}\n?? {provider} Music Video\n?? [Direct Link]({r_link})",
+            "🎬 **{title}**\n👤 {artist}\n🎧 {provider} Music Video\n🔗 [Direct Link]({r_link})",
             {
                 'title': metadata['title'],
                 'artist': metadata['artist'],
@@ -139,7 +139,7 @@ async def music_video_upload(metadata, user):
             }
         )
         if index_link:
-            text += f"\n?? [Index Link]({index_link})"
+            text += f"\n📁 [Index Link]({index_link})"
         await send_message(user, text)
     
     # Cleanup
@@ -171,7 +171,7 @@ async def album_upload(metadata, user):
             
             # Create caption with provider info
             caption = await format_string(
-                "?? **{album}**\n?? {artist}\n?? {provider}",
+                "💿 **{album}**\n👤 {artist}\n🎧 {provider}",
                 {
                     'album': metadata['title'],
                     'artist': metadata['artist'],
@@ -195,7 +195,7 @@ async def album_upload(metadata, user):
     elif Config.UPLOAD_MODE == 'Rclone':
         rclone_link, index_link = await rclone_upload(user, metadata['folderpath'], base_path)
         text = await format_string(
-            "?? **{album}**\n?? {artist}\n?? {provider}\n?? [Direct Link]({r_link})",
+            "💿 **{album}**\n👤 {artist}\n🎧 {provider}\n🔗 [Direct Link]({r_link})",
             {
                 'album': metadata['title'],
                 'artist': metadata['artist'],
@@ -204,7 +204,7 @@ async def album_upload(metadata, user):
             }
         )
         if index_link:
-            text += f"\n?? [Index Link]({index_link})"
+            text += f"\n📁 [Index Link]({index_link})"
         
         if metadata.get('poster_msg'):
             await edit_message(metadata['poster_msg'], text)
@@ -238,7 +238,7 @@ async def artist_upload(metadata, user):
             
             # Create caption with provider info
             caption = await format_string(
-                "?? **{artist}**\n?? {provider} Discography",
+                "🎤 **{artist}**\n🎧 {provider} Discography",
                 {
                     'artist': metadata['title'],
                     'provider': metadata.get('provider', 'Apple Music')
@@ -261,7 +261,7 @@ async def artist_upload(metadata, user):
     elif Config.UPLOAD_MODE == 'Rclone':
         rclone_link, index_link = await rclone_upload(user, metadata['folderpath'], base_path)
         text = await format_string(
-            "?? **{artist}**\n?? {provider} Discography\n?? [Direct Link]({r_link})",
+            "🎤 **{artist}**\n🎧 {provider} Discography\n🔗 [Direct Link]({r_link})",
             {
                 'artist': metadata['title'],
                 'provider': metadata.get('provider', 'Apple Music'),
@@ -269,7 +269,7 @@ async def artist_upload(metadata, user):
             }
         )
         if index_link:
-            text += f"\n?? [Index Link]({index_link})"
+            text += f"\n📁 [Index Link]({index_link})"
         await send_message(user, text)
     
     # Cleanup
@@ -299,7 +299,7 @@ async def playlist_upload(metadata, user):
             
             # Create caption with provider info
             caption = await format_string(
-                "?? **{title}**\n?? Curated by {artist}\n?? {provider} Playlist",
+                "🎵 **{title}**\n👤 Curated by {artist}\n🎧 {provider} Playlist",
                 {
                     'title': metadata['title'],
                     'artist': metadata.get('artist', 'Various Artists'),
@@ -323,7 +323,7 @@ async def playlist_upload(metadata, user):
     elif Config.UPLOAD_MODE == 'Rclone':
         rclone_link, index_link = await rclone_upload(user, metadata['folderpath'], base_path)
         text = await format_string(
-            "?? **{title}**\n?? Curated by {artist}\n?? {provider} Playlist\n?? [Direct Link]({r_link})",
+            "🎵 **{title}**\n👤 Curated by {artist}\n🎧 {provider} Playlist\n🔗 [Direct Link]({r_link})",
             {
                 'title': metadata['title'],
                 'artist': metadata.get('artist', 'Various Artists'),
@@ -332,7 +332,7 @@ async def playlist_upload(metadata, user):
             }
         )
         if index_link:
-            text += f"\n?? [Index Link]({index_link})"
+            text += f"\n📁 [Index Link]({index_link})"
         await send_message(user, text)
     
     # Cleanup
