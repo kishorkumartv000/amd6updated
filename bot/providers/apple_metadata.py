@@ -1,8 +1,9 @@
 import os
-import mutagen
 import re
-import time
-from mutagen.mp4 import MP4
+import base64
+import mutagen
+import mutagen.mp4
+import mutagen.flac
 from pathlib import Path
 from bot.logger import LOGGER
 
@@ -16,7 +17,7 @@ def extract_audio_metadata(file_path: str) -> dict:
     """
     try:
         if file_path.endswith('.m4a'):
-            audio = MP4(file_path)
+            audio = mutagen.mp4.MP4(file_path)
             return {
                 'title': audio.get('\xa9nam', ['Unknown'])[0],
                 'artist': audio.get('\xa9ART', ['Unknown Artist'])[0],
@@ -27,13 +28,7 @@ def extract_audio_metadata(file_path: str) -> dict:
         else:
             # Handle other audio formats like mp3, flac, etc.
             audio = mutagen.File(file_path)
-            return {
-                'title': audio.get('title', ['Unknown'])[0],
-                'artist': audio.get('artist', ['Unknown Artist'])[0],
-                'album': audio.get('album', ['Unknown Album'])[0],
-                'duration': int(audio.info.length),
-                'thumbnail': extract_cover_art(audio, file_path) if hasattr(audio, 'pictures') else None
-            }
+            return extract_generic_metadata(audio, file_path)
     except Exception as e:
         LOGGER.error(f"Audio metadata extraction failed: {str(e)}")
         return default_metadata(file_path)
@@ -48,7 +43,7 @@ def extract_video_metadata(file_path: str) -> dict:
     """
     try:
         if file_path.endswith(('.mp4', '.m4v', '.mov')):
-            video = MP4(file_path)
+            video = mutagen.mp4.MP4(file_path)
             return {
                 'title': video.get('\xa9nam', ['Unknown'])[0],
                 'artist': video.get('\xa9ART', ['Unknown Artist'])[0],
@@ -79,15 +74,30 @@ def extract_apple_metadata(file_path: str) -> dict:
         else:
             # Handle other file types with mutagen
             audio = mutagen.File(file_path)
-            return {
-                'title': audio.get('title', ['Unknown'])[0],
-                'artist': audio.get('artist', ['Unknown Artist'])[0],
-                'album': audio.get('album', ['Unknown Album'])[0],
-                'duration': int(audio.info.length),
-                'thumbnail': extract_cover_art(audio, file_path) if hasattr(audio, 'pictures') else None
-            }
+            return extract_generic_metadata(audio, file_path)
     except Exception as e:
         LOGGER.error(f"Apple metadata extraction failed: {str(e)}")
+        return default_metadata(file_path)
+
+def extract_generic_metadata(audio, file_path):
+    """
+    Extract metadata from generic audio files
+    Args:
+        audio: Mutagen file object
+        file_path: Path to media file
+    Returns:
+        Metadata dictionary
+    """
+    try:
+        return {
+            'title': audio.get('title', ['Unknown'])[0] if 'title' in audio else Path(file_path).stem,
+            'artist': audio.get('artist', ['Unknown Artist'])[0] if 'artist' in audio else 'Unknown Artist',
+            'album': audio.get('album', ['Unknown Album'])[0] if 'album' in audio else 'Unknown Album',
+            'duration': int(audio.info.length),
+            'thumbnail': extract_cover_art(audio, file_path)
+        }
+    except Exception as e:
+        LOGGER.error(f"Generic metadata extraction failed: {str(e)}")
         return default_metadata(file_path)
 
 def extract_cover_art(media, file_path):
@@ -101,7 +111,7 @@ def extract_cover_art(media, file_path):
     """
     try:
         # Handle MP4 cover art
-        if 'covr' in media:
+        if isinstance(media, mutagen.mp4.MP4) and 'covr' in media:
             cover_data = media['covr'][0]
             cover_path = f"{os.path.splitext(file_path)[0]}.jpg"
             with open(cover_path, 'wb') as f:
@@ -142,3 +152,18 @@ def default_metadata(file_path):
         'duration': 0,
         'thumbnail': None
     }
+
+# Test function
+if __name__ == "__main__":
+    test_file = input("Enter path to test file: ")
+    if os.path.exists(test_file):
+        print("Testing metadata extraction...")
+        metadata = extract_apple_metadata(test_file)
+        print("\nExtracted Metadata:")
+        for key, value in metadata.items():
+            print(f"{key}: {value}")
+        
+        if metadata.get('thumbnail'):
+            print(f"\nCover art saved to: {metadata['thumbnail']}")
+    else:
+        print(f"File not found: {test_file}")
