@@ -5,12 +5,45 @@ import asyncio
 from config import Config
 from bot.helpers.utils import format_string, send_message, edit_message
 from bot.logger import LOGGER
-from mutagen import File
-from mutagen.mp4 import MP4
 import re
 
-# Import from new organized module
-from bot.providers.apple_utils import create_apple_zip
+# Simple zip creation function to avoid circular imports
+async def create_simple_zip(folderpath, user_id, metadata):
+    """
+    Create a zip file for Apple Music content
+    Args:
+        folderpath: Path to folder
+        user_id: User ID for naming
+        metadata: Metadata for naming
+    Returns:
+        Path to zip file
+    """
+    # Create descriptive filename
+    content_type = metadata.get('type', 'content')
+    provider = metadata.get('provider', 'AppleMusic')
+    title = metadata.get('title', 'download')
+    safe_title = re.sub(r'[^\w\s-]', '', title)[:50]
+    
+    if content_type == 'album':
+        zip_name = f"{provider}_{safe_title}_Album"
+    elif content_type == 'artist':
+        zip_name = f"{provider}_{safe_title}_Discography"
+    elif content_type == 'playlist':
+        zip_name = f"{provider}_{safe_title}_Playlist"
+    else:
+        zip_name = f"{provider}_{safe_title}"
+    
+    zip_path = f"{folderpath}_{zip_name}.zip"
+    
+    # Create the zip file
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for root, _, files in os.walk(folderpath):
+            for file in files:
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, folderpath)
+                zipf.write(file_path, arcname)
+    
+    return zip_path
 
 async def track_upload(metadata, user):
     """
@@ -31,7 +64,7 @@ async def track_upload(metadata, user):
             metadata['filepath'],
             'audio',
             caption=await format_string(
-                "🎵 **{title}**\n👤 {artist}\n🎧 {provider}",
+                "?? **{title}**\n?? {artist}\n?? {provider}",
                 {
                     'title': metadata['title'],
                     'artist': metadata['artist'],
@@ -48,7 +81,7 @@ async def track_upload(metadata, user):
     elif Config.UPLOAD_MODE == 'Rclone':
         rclone_link, index_link = await rclone_upload(user, metadata['filepath'], base_path)
         text = await format_string(
-            "🎵 **{title}**\n👤 {artist}\n🎧 {provider}\n🔗 [Direct Link]({r_link})",
+            "?? **{title}**\n?? {artist}\n?? {provider}\n?? [Direct Link]({r_link})",
             {
                 'title': metadata['title'],
                 'artist': metadata['artist'],
@@ -57,7 +90,7 @@ async def track_upload(metadata, user):
             }
         )
         if index_link:
-            text += f"\n📁 [Index Link]({index_link})"
+            text += f"\n?? [Index Link]({index_link})"
         await send_message(user, text)
     
     # Cleanup
@@ -85,7 +118,7 @@ async def music_video_upload(metadata, user):
             metadata['filepath'],
             'video',
             caption=await format_string(
-                "🎬 **{title}**\n👤 {artist}\n🎧 {provider} Music Video",
+                "?? **{title}**\n?? {artist}\n?? {provider} Music Video",
                 {
                     'title': metadata['title'],
                     'artist': metadata['artist'],
@@ -97,7 +130,7 @@ async def music_video_upload(metadata, user):
     elif Config.UPLOAD_MODE == 'Rclone':
         rclone_link, index_link = await rclone_upload(user, metadata['filepath'], base_path)
         text = await format_string(
-            "🎬 **{title}**\n👤 {artist}\n🎧 {provider} Music Video\n🔗 [Direct Link]({r_link})",
+            "?? **{title}**\n?? {artist}\n?? {provider} Music Video\n?? [Direct Link]({r_link})",
             {
                 'title': metadata['title'],
                 'artist': metadata['artist'],
@@ -106,7 +139,7 @@ async def music_video_upload(metadata, user):
             }
         )
         if index_link:
-            text += f"\n📁 [Index Link]({index_link})"
+            text += f"\n?? [Index Link]({index_link})"
         await send_message(user, text)
     
     # Cleanup
@@ -130,7 +163,7 @@ async def album_upload(metadata, user):
     if Config.UPLOAD_MODE == 'Telegram':
         if Config.ALBUM_ZIP:
             # Create descriptive zip file
-            zip_path = await create_apple_zip(
+            zip_path = await create_simple_zip(
                 metadata['folderpath'], 
                 user['user_id'],
                 metadata
@@ -138,7 +171,7 @@ async def album_upload(metadata, user):
             
             # Create caption with provider info
             caption = await format_string(
-                "💿 **{album}**\n👤 {artist}\n🎧 {provider}",
+                "?? **{album}**\n?? {artist}\n?? {provider}",
                 {
                     'album': metadata['title'],
                     'artist': metadata['artist'],
@@ -162,7 +195,7 @@ async def album_upload(metadata, user):
     elif Config.UPLOAD_MODE == 'Rclone':
         rclone_link, index_link = await rclone_upload(user, metadata['folderpath'], base_path)
         text = await format_string(
-            "💿 **{album}**\n👤 {artist}\n🎧 {provider}\n🔗 [Direct Link]({r_link})",
+            "?? **{album}**\n?? {artist}\n?? {provider}\n?? [Direct Link]({r_link})",
             {
                 'album': metadata['title'],
                 'artist': metadata['artist'],
@@ -171,7 +204,7 @@ async def album_upload(metadata, user):
             }
         )
         if index_link:
-            text += f"\n📁 [Index Link]({index_link})"
+            text += f"\n?? [Index Link]({index_link})"
         
         if metadata.get('poster_msg'):
             await edit_message(metadata['poster_msg'], text)
@@ -197,7 +230,7 @@ async def artist_upload(metadata, user):
     if Config.UPLOAD_MODE == 'Telegram':
         if Config.ARTIST_ZIP:
             # Create descriptive zip file
-            zip_path = await create_apple_zip(
+            zip_path = await create_simple_zip(
                 metadata['folderpath'], 
                 user['user_id'],
                 metadata
@@ -205,7 +238,7 @@ async def artist_upload(metadata, user):
             
             # Create caption with provider info
             caption = await format_string(
-                "🎤 **{artist}**\n🎧 {provider} Discography",
+                "?? **{artist}**\n?? {provider} Discography",
                 {
                     'artist': metadata['title'],
                     'provider': metadata.get('provider', 'Apple Music')
@@ -228,7 +261,7 @@ async def artist_upload(metadata, user):
     elif Config.UPLOAD_MODE == 'Rclone':
         rclone_link, index_link = await rclone_upload(user, metadata['folderpath'], base_path)
         text = await format_string(
-            "🎤 **{artist}**\n🎧 {provider} Discography\n🔗 [Direct Link]({r_link})",
+            "?? **{artist}**\n?? {provider} Discography\n?? [Direct Link]({r_link})",
             {
                 'artist': metadata['title'],
                 'provider': metadata.get('provider', 'Apple Music'),
@@ -236,7 +269,7 @@ async def artist_upload(metadata, user):
             }
         )
         if index_link:
-            text += f"\n📁 [Index Link]({index_link})"
+            text += f"\n?? [Index Link]({index_link})"
         await send_message(user, text)
     
     # Cleanup
@@ -258,7 +291,7 @@ async def playlist_upload(metadata, user):
     if Config.UPLOAD_MODE == 'Telegram':
         if Config.PLAYLIST_ZIP:
             # Create descriptive zip file
-            zip_path = await create_apple_zip(
+            zip_path = await create_simple_zip(
                 metadata['folderpath'], 
                 user['user_id'],
                 metadata
@@ -266,7 +299,7 @@ async def playlist_upload(metadata, user):
             
             # Create caption with provider info
             caption = await format_string(
-                "🎵 **{title}**\n👤 Curated by {artist}\n🎧 {provider} Playlist",
+                "?? **{title}**\n?? Curated by {artist}\n?? {provider} Playlist",
                 {
                     'title': metadata['title'],
                     'artist': metadata.get('artist', 'Various Artists'),
@@ -290,7 +323,7 @@ async def playlist_upload(metadata, user):
     elif Config.UPLOAD_MODE == 'Rclone':
         rclone_link, index_link = await rclone_upload(user, metadata['folderpath'], base_path)
         text = await format_string(
-            "🎵 **{title}**\n👤 Curated by {artist}\n🎧 {provider} Playlist\n🔗 [Direct Link]({r_link})",
+            "?? **{title}**\n?? Curated by {artist}\n?? {provider} Playlist\n?? [Direct Link]({r_link})",
             {
                 'title': metadata['title'],
                 'artist': metadata.get('artist', 'Various Artists'),
@@ -299,7 +332,7 @@ async def playlist_upload(metadata, user):
             }
         )
         if index_link:
-            text += f"\n📁 [Index Link]({index_link})"
+            text += f"\n?? [Index Link]({index_link})"
         await send_message(user, text)
     
     # Cleanup
