@@ -3,7 +3,8 @@ import os
 import sys
 import asyncio
 import logging
-import subprocess  # Add missing import
+import signal
+import subprocess
 
 # Set up paths
 project_root = os.path.dirname(os.path.abspath(__file__))
@@ -16,14 +17,41 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+async def shutdown(signal, loop):
+    """Cleanup tasks tied to the service's shutdown."""
+    logger.info(f"Received exit signal {signal.name}...")
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+    
+    [task.cancel() for task in tasks]
+    logger.info(f"Cancelling {len(tasks)} outstanding tasks")
+    await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # Close all client sessions
+    from bot.settings import bot_set
+    if bot_set.qobuz:
+        await bot_set.qobuz.session.close()
+    if bot_set.deezer:
+        await bot_set.deezer.session.close()
+    if bot_set.tidal:
+        await bot_set.tidal.session.close()
+    
+    loop.stop()
+
 async def main():
     """Main entry point for the bot"""
     from bot import tgclient, settings
     from config import Config
-    from pyrogram import idle  # Import idle from pyrogram
+    from pyrogram import idle
     
     # Initialize bot settings
     bot_set = settings.bot_set
+    
+    # Set up signal handlers
+    loop = asyncio.get_running_loop()
+    signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
+    for s in signals:
+        loop.add_signal_handler(
+            s, lambda s=s: asyncio.create_task(shutdown(s, loop))
     
     # Ensure download directory exists
     if not os.path.isdir(Config.LOCAL_STORAGE):
@@ -55,7 +83,7 @@ async def main():
     # Start the bot
     logger.info("Starting Apple Music Downloader Bot...")
     await tgclient.aio.start()
-    await idle()  # Use the imported idle function
+    await idle()
 
 if __name__ == "__main__":
     try:
