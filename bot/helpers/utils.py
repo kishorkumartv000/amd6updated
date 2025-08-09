@@ -21,6 +21,8 @@ import bot.helpers.translations as lang
 from ..logger import LOGGER
 from ..settings import bot_set
 from .buttons.links import links_button
+
+# FIXED: Use absolute imports for message functions
 from .message import send_message, edit_message
 
 MAX_SIZE = 1.9 * 1024 * 1024 * 1024  # 2GB
