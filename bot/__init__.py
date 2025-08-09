@@ -1,31 +1,27 @@
 import os
 import sys
-
-# Get the parent directory of the current file (bot directory)
-current_dir = os.path.dirname(os.path.abspath(__file__))
-
-# Get the project root directory (apple-music-bot)
-project_root = os.path.dirname(current_dir)
-
-# Add project root to Python path
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 from config import Config
 
-bot = Config.BOT_USERNAME
+# Add bot directory to sys.path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
 
-plugins = dict(
-    root="bot/modules"
-)
+# Get bot username from config
+bot_username = Config.BOT_USERNAME
 
-class CMD(object):
-    START = ["start", f"start@{bot}"]
-    HELP = ["help", f"help@{bot}"]
-    SETTINGS = ["settings", f"settings@{bot}"]
-    DOWNLOAD = ["download", f"download@{bot}"]
-    BAN = ["ban", f"ban@{bot}"]
-    AUTH = ["auth", f"auth@{bot}"]
-    LOG = ["log", f"log@{bot}"]
+class CMD:
+    START = ["start", f"start@{bot_username}"]
+    HELP = ["help", f"help@{bot_username}"]
+    SETTINGS = ["settings", f"settings@{bot_username}"]
+    DOWNLOAD = ["download", f"download@{bot_username}"]
+    BAN = ["ban", f"ban@{bot_username}"]
+    AUTH = ["auth", f"auth@{bot_username}"]
+    LOG = ["log", f"log@{bot_username}"]
 
 cmd = CMD()
+
+# Define plugins for Pyrogram
+plugins = {
+    "root": "bot.modules"
+}
