@@ -1,1 +1,2 @@
-python3 -m bot
+#!/bin/bash
+python3 main.py
