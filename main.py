@@ -20,20 +20,20 @@ logger = logging.getLogger(__name__)
 async def shutdown(signal, loop):
     """Cleanup tasks tied to the service's shutdown."""
     logger.info(f"Received exit signal {signal.name}...")
-    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
     
+    # Close all provider sessions
+    from bot.settings import bot_set
+    await bot_set.close_sessions()
+    
+    # Stop Pyrogram client
+    from bot import tgclient
+    await tgclient.aio.stop()
+    
+    # Cancel all tasks
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
     [task.cancel() for task in tasks]
     logger.info(f"Cancelling {len(tasks)} outstanding tasks")
     await asyncio.gather(*tasks, return_exceptions=True)
-    
-    # Close all client sessions
-    from bot.settings import bot_set
-    if bot_set.qobuz:
-        await bot_set.qobuz.session.close()
-    if bot_set.deezer:
-        await bot_set.deezer.session.close()
-    if bot_set.tidal:
-        await bot_set.tidal.session.close()
     
     loop.stop()
 
@@ -51,7 +51,9 @@ async def main():
     signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
     for s in signals:
         loop.add_signal_handler(
-            s, lambda s=s: asyncio.create_task(shutdown(s, loop))
+            s,
+            lambda s=s: asyncio.create_task(shutdown(s, loop))
+        )
     
     # Ensure download directory exists
     if not os.path.isdir(Config.LOCAL_STORAGE):
