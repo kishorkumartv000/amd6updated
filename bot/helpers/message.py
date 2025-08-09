@@ -1,11 +1,18 @@
 import os
+import sys
 import asyncio
 import re
+
+# Add helpers directory to sys.path for proper import resolution
+helpers_dir = os.path.dirname(os.path.abspath(__file__))
+if helpers_dir not in sys.path:
+    sys.path.insert(0, helpers_dir)
 
 from pyrogram.types import Message
 from pyrogram.errors import MessageNotModified, FloodWait
 
-from bot.tgclient import aio
+# Import via bot package instead of direct file reference
+from bot import tgclient
 from bot.settings import bot_set
 from bot.logger import LOGGER
 
@@ -83,12 +90,9 @@ async def send_message(user, item, itype='text', caption=None, markup=None, chat
         user = await fetch_user_details(user)
     chat_id = chat_id if chat_id else user['chat_id']
     
-    # Initialize msg to prevent UnboundLocalError
-    msg = None
-
     try:
         if itype == 'text':
-            msg = await aio.send_message(
+            msg = await tgclient.aio.send_message(
                 chat_id=chat_id,
                 text=item,
                 reply_to_message_id=user['r_id'],
@@ -96,7 +100,7 @@ async def send_message(user, item, itype='text', caption=None, markup=None, chat
                 disable_web_page_preview=True
             )
         elif itype == 'doc':
-            msg = await aio.send_document(
+            msg = await tgclient.aio.send_document(
                 chat_id=chat_id,
                 document=item,
                 caption=caption,
@@ -109,7 +113,7 @@ async def send_message(user, item, itype='text', caption=None, markup=None, chat
             title = meta.get('title', 'Unknown Track') if meta else 'Unknown Track'
             thumbnail = meta.get('thumbnail') if meta else None
             
-            msg = await aio.send_audio(
+            msg = await tgclient.aio.send_audio(
                 chat_id=chat_id,
                 audio=item,
                 caption=caption,
@@ -126,7 +130,7 @@ async def send_message(user, item, itype='text', caption=None, markup=None, chat
             height = int(meta.get('height', 1080)) if meta else 1080
             thumbnail = meta.get('thumbnail') if meta else None
             
-            msg = await aio.send_video(
+            msg = await tgclient.aio.send_video(
                 chat_id=chat_id,
                 video=item,
                 caption=caption,
@@ -137,7 +141,7 @@ async def send_message(user, item, itype='text', caption=None, markup=None, chat
                 reply_to_message_id=user['r_id']
             )
         elif itype == 'pic':
-            msg = await aio.send_photo(
+            msg = await tgclient.aio.send_photo(
                 chat_id=chat_id,
                 photo=item,
                 caption=caption,
@@ -154,7 +158,9 @@ async def send_message(user, item, itype='text', caption=None, markup=None, chat
 
 async def edit_message(msg:Message, text, markup=None, antiflood=True):
     try:
-        edited = await msg.edit_text(
+        edited = await tgclient.aio.edit_message_text(
+            chat_id=msg.chat.id,
+            message_id=msg.id,
             text=text,
             reply_markup=markup,
             disable_web_page_preview=True
