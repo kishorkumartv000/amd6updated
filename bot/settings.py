@@ -212,5 +212,17 @@ class BotSettings:
             if item.__language__ == self.bot_lang:
                 lang.s = item
                 break
+                
+    async def close_sessions(self):
+        """Close all provider sessions"""
+        if self.qobuz:
+            await self.qobuz.session.close()
+            LOGGER.info("Closed Qobuz session")
+        if self.deezer:
+            await self.deezer.session.close()
+            LOGGER.info("Closed Deezer session")
+        if self.tidal:
+            await self.tidal.session.close()
+            LOGGER.info("Closed Tidal session")
 
 bot_set = BotSettings()
