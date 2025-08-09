@@ -3,20 +3,21 @@ import re
 import asyncio
 import logging
 import shutil
+import mutagen
+from pathlib import Path
 from bot.helpers.utils import (
     send_message,
     edit_message,
     format_string,
     cleanup
 )
-from bot.helpers.uploader import track_upload, album_upload, music_video_upload, artist_upload, playlist_upload
 from bot.helpers.database.pg_impl import download_history
 from config import Config
 from bot.logger import LOGGER
 
 # Import from new organized modules
 from .apple_utils import run_apple_downloader
-from .apple_metadata import extract_apple_metadata
+from .apple_metadata import extract_apple_metadata, default_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class AppleMusicProvider:
     def validate_url(self, url: str) -> bool:
         """Check if URL is valid Apple Music content"""
         return bool(re.match(
-            r"https://music\.apple\.com/.+/(album|song|playlist|music-video)/.+", 
+            r"https://music\.apple\.com/.+/(album|song|playlist|music-video|artist)/.+", 
             url
         ))
     
@@ -74,17 +75,22 @@ class AppleMusicProvider:
         
         LOGGER.info(f"Found {len(files)} files in {user_dir}")
         
-        # Extract metadata
+        # Extract metadata - RUN IN THREAD POOL
         items = []
         for file_path in files:
             try:
-                metadata = await extract_apple_metadata(file_path)
+                # Run synchronous function in thread
+                metadata = await asyncio.to_thread(extract_apple_metadata, file_path)
                 metadata['filepath'] = file_path
                 metadata['provider'] = self.name
                 items.append(metadata)
                 LOGGER.info(f"Processed file: {file_path}")
             except Exception as e:
                 LOGGER.error(f"Metadata extraction failed for {file_path}: {str(e)}")
+                # Create default metadata as fallback
+                default = default_metadata(file_path)
+                default['provider'] = self.name
+                items.append(default)
         
         # Handle case where no metadata was extracted
         if not items:
@@ -184,6 +190,15 @@ async def start_apple(link: str, user: dict, options: dict = None):
         if not result['success']:
             await edit_message(user['bot_msg'], f"❌ Error: {result['error']}")
             return
+        
+        # Lazy import to break circular dependency
+        from bot.helpers.uploader import (
+            track_upload, 
+            album_upload, 
+            music_video_upload, 
+            artist_upload, 
+            playlist_upload
+        )
         
         # Process and upload content based on type
         if result['type'] == 'track':
