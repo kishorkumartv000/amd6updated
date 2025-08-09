@@ -1,11 +1,16 @@
 import os
+import sys
 import json
 import base64
 import requests
 import subprocess
 
-import bot.helpers.translations as lang
+# Add bot directory to sys.path for proper import resolution
+bot_dir = os.path.dirname(os.path.abspath(__file__))
+if bot_dir not in sys.path:
+    sys.path.insert(0, bot_dir)
 
+import bot.helpers.translations as lang
 from config import Config
 from bot.logger import LOGGER
 
